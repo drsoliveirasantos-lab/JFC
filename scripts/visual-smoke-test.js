@@ -14,7 +14,6 @@ const pages = [
   { name: 'home', path: '/' },
   { name: 'services', path: '/services/' },
   { name: 'realisations', path: '/realisations/' },
-  { name: 'avant-apres', path: '/avant-apres/' },
   { name: 'a-propos', path: '/a-propos/' },
   { name: 'contact', path: '/contact/' },
   { name: 'devis', path: '/devis/' }
@@ -86,6 +85,7 @@ try {
         const brokenImages = [...document.images].filter(img => !img.complete || img.naturalWidth === 0).map(img => img.getAttribute('src'));
         const overflow = Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth);
         const navLinks = [...document.querySelectorAll('nav a')].map(a => a.textContent?.trim()).filter(Boolean);
+        const navHrefs = [...document.querySelectorAll('nav a')].map(a => a.getAttribute('href')).filter(Boolean);
         const visibleText = document.body.innerText || '';
         return {
           title: document.title,
@@ -93,6 +93,7 @@ try {
           brokenImages,
           overflow,
           navLinks,
+          navHrefs,
           hasPhone: visibleText.includes('06 07 72 16 33') || !!document.querySelector('a[href^="tel:"]'),
           hasWhatsapp: !!document.querySelector('a[href*="wa.me"]'),
           hasMain: !!document.querySelector('main')
@@ -104,6 +105,7 @@ try {
       assert(metrics.brokenImages.length === 0, `${vp.name} ${route.path} has broken images: ${metrics.brokenImages.join(', ')}`, failures);
       assert(metrics.overflow <= 8, `${vp.name} ${route.path} has horizontal overflow of ${metrics.overflow}px`, failures);
       assert(metrics.navLinks.length >= 5, `${vp.name} ${route.path} navigation is incomplete`, failures);
+      assert(!metrics.navHrefs.includes('/avant-apres/'), `${vp.name} ${route.path} still links to avant-apres`, failures);
       assert(metrics.hasPhone, `${vp.name} ${route.path} has no visible phone/tel link`, failures);
       assert(metrics.hasWhatsapp, `${vp.name} ${route.path} has no WhatsApp link`, failures);
       assert(consoleErrors.length === 0, `${vp.name} ${route.path} console errors: ${consoleErrors.join(' | ')}`, failures);
