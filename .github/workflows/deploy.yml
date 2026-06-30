@@ -1,4 +1,4 @@
-name: Deploy JFC site
+name: Build JFC site
 
 on:
   push:
@@ -7,15 +7,14 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: build-jfc-site-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
+    name: Build static site
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,20 +24,20 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
       - name: Build
         run: npm run build
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Verify output
+        run: |
+          test -f dist/index.html
+          test -f dist/style.css
+          test -f dist/assets/mobile-fixes.css
+          test -d dist/assets/photos
+          test -f dist/realisations/index.html
+          test -f dist/avant-apres/index.html
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
-          path: ./dist
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: jfc-site-dist
+          if-no-files-found: error
+          path: dist
