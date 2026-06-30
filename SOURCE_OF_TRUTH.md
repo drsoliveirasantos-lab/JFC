@@ -1,39 +1,113 @@
-# Source of truth — JFC
+# Source of truth — JFC Renovation
 
-This file defines what future contributors and AI assistants should treat as authoritative.
+Ce fichier définit ce que les futurs contributeurs humains ou IA doivent considérer comme officiel.
+
+## Lecture obligatoire
+
+Avant tout changement, lire :
+
+1. `SOURCE_OF_TRUTH.md`
+2. `AGENTS.md`
+3. `.github/copilot-instructions.md`
+4. `docs/site-architecture.md`
+5. `.github/pull_request_template.md` avant d’ouvrir une PR
 
 ## Branches
 
-- `main` is the main branch.
-- Use a short working branch for each change.
-- Open a PR before merging.
+- `main` est la branche principale publiée.
+- Pour un changement important, créer une branche courte dédiée.
+- Avant toute mise à jour majeure de `main`, créer une sauvegarde `backup-main-YYYYMMDD`.
+- Ouvrir une PR avant merge quand le changement n’est pas une micro-correction explicitement demandée.
 
-## Editable sources
+## Sources éditables officielles
 
-The editable source files are the project files used to build or serve the site: HTML, CSS, JavaScript, assets, and any source folders declared in this repository.
+Pages :
 
-When a generated or bundled file exists, do not treat it as the primary editing surface until its source path is identified.
+```txt
+index.html
+services/index.html
+realisations/index.html
+a-propos/index.html
+contact/index.html
+devis/index.html
+```
 
-## Documentation
+Styles et scripts :
 
-- `AGENTS.md` = operating rules for AI agents.
-- `.github/copilot-instructions.md` = repository-level AI instructions.
-- `docs/site-architecture.md` = repository organization and workflow.
+```txt
+style.css
+assets/mobile-fixes.css
+assets/whatsapp-direct.js
+```
+
+Assets :
+
+```txt
+assets/photos/**
+assets/about-portrait.svg
+```
+
+Build et tests :
+
+```txt
+package.json
+scripts/jfc-site-tests.js
+scripts/validate-repository-hygiene.js
+.github/workflows/site-tests.yml
+.github/workflows/deploy.yml
+```
+
+## Sortie générée
+
+```txt
+dist/**
+```
+
+`dist/` est une sortie de build. Ne pas la traiter comme source officielle et ne pas l’éditer manuellement.
+
+## Règles métier
+
+- Nom affiché : `JFC Renovation` / `JFC Renovation Interieure`.
+- Positionnement : artisan en rénovation intérieure.
+- Éviter l’expression “homme à tout faire” dans le positionnement principal.
+- Contact officiel : `06 07 72 16 33`.
+- WhatsApp officiel : `https://wa.me/33607721633`.
+- Email officiel : `jonatanfc97@gmail.com`.
+- SIRET officiel : `93484902700016`.
+
+## Règles visuelles
+
+- Mobile d’abord.
+- Pas d’overflow horizontal.
+- Navigation claire : Services, Réalisations, À propos, Contact, Devis.
+- Les photos doivent être lisibles, cliquables quand elles sont dans la galerie, et ne pas se superposer.
+- Ne pas afficher de section avant/après si les paires ne sont pas fiables.
+- Les CTA principaux sont : Appeler, WhatsApp, Demander un devis.
 
 ## Validation
 
-The hygiene script is:
+Workflow principal :
+
+```txt
+.github/workflows/site-tests.yml
+```
+
+Scripts principaux :
 
 ```bash
+npm run build
+npm run test:site
 node scripts/validate-repository-hygiene.js
 ```
 
-The GitHub workflow is:
+Le workflow `JFC site tests` doit rester le workflow consolidé principal. Ajouter des jobs dedans plutôt que créer des workflows debug parallèles.
 
-```txt
-.github/workflows/repository-hygiene.yml
-```
+## Matériel interdit ou suspect
 
-## Forbidden stale material
+Ne pas conserver dans le repo :
 
-Do not keep temporary archives, backup copies, debug workflows, or old generated dumps in the repository unless explicitly documented and validated.
+- archives `.zip`, `.rar`, `.7z`, `.tar`, `.tgz`, `.gz` ;
+- copies `old`, `copy`, `backup`, `legacy`, `obsolete`, `tmp`, `temp` non documentées ;
+- workflows debug permanents ;
+- vieux fichiers générés pouvant être confondus avec les sources ;
+- anciennes pages retirées de la navigation sans documentation.
