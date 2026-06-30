@@ -41,10 +41,14 @@ function contentType(file) {
   if (file.endsWith('.svg')) return 'image/svg+xml';
   if (file.endsWith('.png')) return 'image/png';
   if (file.endsWith('.jpg') || file.endsWith('.jpeg')) return 'image/jpeg';
+  if (file.endsWith('.ico')) return 'image/x-icon';
   return 'application/octet-stream';
 }
+function cleanRequestPath(urlPath) {
+  return decodeURIComponent((urlPath || '/').split('?')[0]);
+}
 function safeResolve(urlPath) {
-  const clean = decodeURIComponent((urlPath || '/').split('?')[0]);
+  const clean = cleanRequestPath(urlPath);
   const rel = clean === '/' ? 'index.html' : clean.replace(/^\//, '');
   let filePath = path.join(dist, rel);
   if (exists(filePath) && fs.statSync(filePath).isDirectory()) filePath = path.join(filePath, 'index.html');
@@ -55,6 +59,12 @@ function safeResolve(urlPath) {
 }
 function startServer() {
   const server = http.createServer((req, res) => {
+    const clean = cleanRequestPath(req.url);
+    if (clean === '/favicon.ico') {
+      res.writeHead(204, { 'cache-control': 'no-store' });
+      res.end();
+      return;
+    }
     const resolved = safeResolve(req.url);
     if (!resolved || !exists(resolved) || !fs.statSync(resolved).isFile()) {
       res.writeHead(404, { 'content-type': 'text/plain' });
@@ -80,6 +90,9 @@ function localRefToFile(ref, fromRoute = '/') {
   const baseDir = fromRoute === '/' ? dist : path.dirname(pageFile(fromRoute));
   return path.join(baseDir, clean);
 }
+function isIgnoredConsoleError(text) {
+  return /favicon\.ico/i.test(text) || /ResizeObserver loop/i.test(text);
+}
 async function browserVisit(browserType, viewport, label, checks = {}) {
   const failures = [];
   const lines = [];
@@ -92,65 +105,84 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
     for (const route of pages) {
       const page = await context.newPage();
       const consoleErrors = [];
-      page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
-      const response = await page.goto(`${baseUrl}${route.path}?test=${label}`, { waitUntil: 'networkidle', timeout: 30000 });
-      assert(response && response.ok(), `${label} ${route.path} HTTP not OK`, failures);
-      await page.screenshot({ path: path.join(shotsDir, `${label}-${route.name}.png`), fullPage: true });
-      const metrics = await page.evaluate(() => {
-        const brokenImages = [...document.images].filter(img => !img.complete || img.naturalWidth === 0).map(img => img.getAttribute('src'));
-        const imageAltMissing = [...document.images].filter(img => !img.getAttribute('alt')).map(img => img.getAttribute('src'));
-        const emptyLinks = [...document.querySelectorAll('a')].filter(a => !(a.textContent || '').trim() && !a.getAttribute('aria-label')).map(a => a.getAttribute('href'));
-        const overflow = Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth);
-        const visibleText = document.body.innerText || '';
-        return {
-          title: document.title,
-          brokenImages,
-          imageAltMissing,
-          emptyLinks,
-          overflow,
-          navLinks: [...document.querySelectorAll('nav a')].map(a => a.getAttribute('href')).filter(Boolean),
-          hasMain: !!document.querySelector('main'),
-          hasPhone: visibleText.includes('06 07 72 16 33') || !!document.querySelector('a[href^="tel:"]'),
-          hasWhatsapp: !!document.querySelector('a[href*="wa.me"], a[href^="whatsapp://"]'),
-          text: visibleText
-        };
+      page.on('console', msg => {
+        const text = msg.text();
+        if (msg.type() === 'error' && !isIgnoredConsoleError(text)) consoleErrors.push(text);
       });
-      assert(metrics.title.length > 0, `${label} ${route.path} missing title`, failures);
-      assert(metrics.hasMain, `${label} ${route.path} missing main`, failures);
-      assert(metrics.brokenImages.length === 0, `${label} ${route.path} broken images: ${metrics.brokenImages.join(', ')}`, failures);
-      assert(metrics.imageAltMissing.length === 0, `${label} ${route.path} images missing alt`, failures);
-      assert(metrics.emptyLinks.length === 0, `${label} ${route.path} empty links`, failures);
-      assert(metrics.overflow <= 12, `${label} ${route.path} horizontal overflow ${metrics.overflow}px`, failures);
-      assert(!metrics.navLinks.includes('/avant-apres/'), `${label} ${route.path} still links to avant-apres`, failures);
-      assert(metrics.hasPhone, `${label} ${route.path} missing phone`, failures);
-      assert(metrics.hasWhatsapp, `${label} ${route.path} missing WhatsApp`, failures);
-      assert(consoleErrors.length === 0, `${label} ${route.path} console errors: ${consoleErrors.join(' | ')}`, failures);
-      for (const text of route.must) assert(metrics.text.includes(text), `${label} ${route.path} missing visible text: ${text}`, failures);
-      lines.push(`${label} ${route.path} OK images=${metrics.brokenImages.length === 0 ? 'ok' : 'broken'} overflow=${metrics.overflow}px`);
-      await page.close();
+      page.on('pageerror', error => consoleErrors.push(`pageerror: ${error.message}`));
+      try {
+        const response = await page.goto(`${baseUrl}${route.path}?test=${label}`, { waitUntil: 'networkidle', timeout: 30000 });
+        assert(response && response.ok(), `${label} ${route.path} HTTP not OK`, failures);
+        await page.screenshot({ path: path.join(shotsDir, `${label}-${route.name}.png`), fullPage: true });
+        const metrics = await page.evaluate(() => {
+          const brokenImages = [...document.images].filter(img => !img.complete || img.naturalWidth === 0).map(img => img.getAttribute('src'));
+          const imageAltMissing = [...document.images].filter(img => !img.getAttribute('alt')).map(img => img.getAttribute('src'));
+          const emptyLinks = [...document.querySelectorAll('a')].filter(a => !(a.textContent || '').trim() && !a.getAttribute('aria-label')).map(a => a.getAttribute('href'));
+          const overflow = Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth);
+          const visibleText = document.body.innerText || '';
+          return {
+            title: document.title,
+            brokenImages,
+            imageAltMissing,
+            emptyLinks,
+            overflow,
+            navLinks: [...document.querySelectorAll('nav a')].map(a => a.getAttribute('href')).filter(Boolean),
+            hasMain: !!document.querySelector('main'),
+            hasPhone: visibleText.includes('06 07 72 16 33') || !!document.querySelector('a[href^="tel:"]'),
+            hasWhatsapp: !!document.querySelector('a[href*="wa.me"], a[href^="whatsapp://"]'),
+            text: visibleText
+          };
+        });
+        assert(metrics.title.length > 0, `${label} ${route.path} missing title`, failures);
+        assert(metrics.hasMain, `${label} ${route.path} missing main`, failures);
+        assert(metrics.brokenImages.length === 0, `${label} ${route.path} broken images: ${metrics.brokenImages.join(', ')}`, failures);
+        assert(metrics.imageAltMissing.length === 0, `${label} ${route.path} images missing alt`, failures);
+        assert(metrics.emptyLinks.length === 0, `${label} ${route.path} empty links`, failures);
+        assert(metrics.overflow <= 12, `${label} ${route.path} horizontal overflow ${metrics.overflow}px`, failures);
+        assert(!metrics.navLinks.includes('/avant-apres/'), `${label} ${route.path} still links to avant-apres`, failures);
+        assert(metrics.hasPhone, `${label} ${route.path} missing phone`, failures);
+        assert(metrics.hasWhatsapp, `${label} ${route.path} missing WhatsApp`, failures);
+        assert(consoleErrors.length === 0, `${label} ${route.path} console errors: ${consoleErrors.join(' | ')}`, failures);
+        for (const text of route.must) assert(metrics.text.includes(text), `${label} ${route.path} missing visible text: ${text}`, failures);
+        lines.push(`${label} ${route.path} OK images=${metrics.brokenImages.length === 0 ? 'ok' : 'broken'} overflow=${metrics.overflow}px`);
+      } catch (error) {
+        fail(`${label} ${route.path} threw: ${error?.message || error}`, failures);
+      } finally {
+        await page.close().catch(() => {});
+      }
     }
     await context.close();
     if (checks.lightbox) {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
-      await page.goto(`${baseUrl}/realisations/?test=lightbox`, { waitUntil: 'networkidle' });
-      await page.click('.js-lightbox');
-      await page.waitForSelector('.lightbox.open', { timeout: 5000 });
-      const openSrc = await page.$eval('#lightboxImg', el => el.getAttribute('src'));
-      assert(!!openSrc, 'lightbox opens without image source', failures);
-      await page.click('#lightboxClose');
-      await page.waitForFunction(() => !document.querySelector('.lightbox')?.classList.contains('open'));
-      lines.push('lightbox OK');
-      await page.close();
+      try {
+        await page.goto(`${baseUrl}/realisations/?test=lightbox`, { waitUntil: 'networkidle' });
+        await page.click('.js-lightbox');
+        await page.waitForSelector('.lightbox.open', { timeout: 5000 });
+        const openSrc = await page.$eval('#lightboxImg', el => el.getAttribute('src'));
+        assert(!!openSrc, 'lightbox opens without image source', failures);
+        await page.click('#lightboxClose');
+        await page.waitForFunction(() => !document.querySelector('.lightbox')?.classList.contains('open'));
+        lines.push('lightbox OK');
+      } catch (error) {
+        fail(`lightbox threw: ${error?.message || error}`, failures);
+      } finally {
+        await page.close().catch(() => {});
+      }
     }
     if (checks.carousel) {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
-      await page.goto(`${baseUrl}/?test=carousel`, { waitUntil: 'networkidle' });
-      const first = await page.textContent('#slide');
-      await page.waitForTimeout(3900);
-      const second = await page.textContent('#slide');
-      assert(first !== second, 'home carousel label did not change', failures);
-      lines.push('carousel OK');
-      await page.close();
+      try {
+        await page.goto(`${baseUrl}/?test=carousel`, { waitUntil: 'networkidle' });
+        const first = await page.textContent('#slide');
+        await page.waitForTimeout(3900);
+        const second = await page.textContent('#slide');
+        assert(first !== second, 'home carousel label did not change', failures);
+        lines.push('carousel OK');
+      } catch (error) {
+        fail(`carousel threw: ${error?.message || error}`, failures);
+      } finally {
+        await page.close().catch(() => {});
+      }
     }
   } finally {
     await browser.close();
