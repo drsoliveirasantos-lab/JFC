@@ -1,0 +1,185 @@
+name: JFC site tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: jfc-site-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Static, data and quality validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build static site
+        run: npm run build
+      - name: Run static, data and quality validation
+        run: node scripts/jfc-site-tests.js static
+      - name: Upload static quality reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-quality-hardening-reports
+          if-no-files-found: ignore
+          path: |
+            reports/static-data-quality-validation.txt
+
+  browser-desktop-core:
+    name: Browser desktop core regression tests
+    needs: validate
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Install Playwright Chromium with timeout
+        run: timeout 240s npx playwright install --with-deps chromium
+      - name: Build static site
+        run: npm run build
+      - name: Run desktop core regression tests
+        run: node scripts/jfc-site-tests.js desktop-core
+      - name: Upload desktop core evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-core-evidence
+          if-no-files-found: ignore
+          path: |
+            reports/browser-desktop-core.txt
+            reports/screenshots/*desktop-core*.png
+
+  browser-mobile-critical:
+    name: Browser mobile Safari-shape critical tests
+    needs: validate
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Install Playwright WebKit with timeout
+        run: timeout 300s npx playwright install --with-deps webkit
+      - name: Build static site
+        run: npm run build
+      - name: Run mobile Safari-shape critical tests
+        run: node scripts/jfc-site-tests.js mobile-critical
+      - name: Upload mobile evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-touch-evidence
+          if-no-files-found: ignore
+          path: |
+            reports/browser-mobile-safari-shape.txt
+            reports/screenshots/*mobile-safari-shape*.png
+
+  browser-deployed-visual-a11y:
+    name: Browser deployed, visual and accessibility tests
+    needs: validate
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Install Playwright Chromium with timeout
+        run: timeout 240s npx playwright install --with-deps chromium
+      - name: Build static site
+        run: npm run build
+      - name: Run visual and accessibility tests
+        env:
+          DEPLOYED_PREVIEW_BASE_URL: https://artisan.nykuto.com
+        run: node scripts/jfc-site-tests.js deployed-visual-a11y
+      - name: Upload visual and accessibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployed-visual-a11y-evidence
+          if-no-files-found: ignore
+          path: |
+            reports/browser-deployed-visual-a11y.txt
+            reports/screenshots/*deployed-visual-a11y*.png
+
+  browser-lot2-visible-features:
+    name: Browser lot 2 visible feature tests
+    needs: validate
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Install Playwright Chromium with timeout
+        run: timeout 240s npx playwright install --with-deps chromium
+      - name: Build static site
+        run: npm run build
+      - name: Run lot 2 visible feature tests
+        run: node scripts/jfc-site-tests.js lot2-visible-features
+      - name: Upload lot 2 visible feature evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lot2-visible-features-evidence
+          if-no-files-found: ignore
+          path: |
+            reports/browser-lot2-visible-features.txt
+            reports/screenshots/*lot2-visible-features*.png
+
+  browser-lot3-hardening:
+    name: Browser lot 3 hardening tests
+    needs: validate
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Install Playwright browsers with timeout
+        run: timeout 420s npx playwright install --with-deps chromium firefox webkit
+      - name: Build static site
+        run: npm run build
+      - name: Run lot 3 hardening tests
+        run: node scripts/jfc-site-tests.js lot3-hardening
+      - name: Upload lot 3 hardening evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lot3-hardening-evidence
+          if-no-files-found: ignore
+          path: |
+            reports/browser-lot3-hardening.txt
+            reports/screenshots/*lot3-*.png
