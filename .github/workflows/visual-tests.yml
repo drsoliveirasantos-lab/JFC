@@ -1,0 +1,43 @@
+name: Visual tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, preview]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual:
+    name: Build and visual smoke tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Build static site
+        run: npm run build
+      - name: Run visual smoke tests
+        run: npm run test:visual
+      - name: Upload visual screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-test-screenshots
+          if-no-files-found: error
+          path: |
+            reports/screenshots
+            reports/visual-smoke-test-report.txt
