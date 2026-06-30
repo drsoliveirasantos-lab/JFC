@@ -67,7 +67,7 @@ jobs:
           name: desktop-core-evidence
           if-no-files-found: ignore
           path: |
-            reports/browser-desktop-core.txt
+            reports/desktop-core.txt
             reports/screenshots/*desktop-core*.png
 
   browser-mobile-critical:
@@ -95,7 +95,7 @@ jobs:
           name: mobile-touch-evidence
           if-no-files-found: ignore
           path: |
-            reports/browser-mobile-safari-shape.txt
+            reports/mobile-safari-shape.txt
             reports/screenshots/*mobile-safari-shape*.png
 
   browser-deployed-visual-a11y:
@@ -125,7 +125,7 @@ jobs:
           name: deployed-visual-a11y-evidence
           if-no-files-found: ignore
           path: |
-            reports/browser-deployed-visual-a11y.txt
+            reports/deployed-visual-a11y.txt
             reports/screenshots/*deployed-visual-a11y*.png
 
   browser-lot2-visible-features:
@@ -153,7 +153,7 @@ jobs:
           name: lot2-visible-features-evidence
           if-no-files-found: ignore
           path: |
-            reports/browser-lot2-visible-features.txt
+            reports/lot2-visible-features.txt
             reports/screenshots/*lot2-visible-features*.png
 
   browser-lot3-hardening:
