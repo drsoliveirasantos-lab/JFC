@@ -1,14 +1,25 @@
 <!doctype html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="JFC Rénovation Intérieure : cuisine complète, salle de bain, parquet, placo, plans de travail et petits travaux." />
-    <meta name="theme-color" content="#073642" />
-    <title>JFC Rénovation Intérieure</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JFC Renovation Interieure</title>
+  <style>
+    body{margin:0;font-family:Arial,sans-serif;color:#111;background:#f7f7f2}*{box-sizing:border-box}.top{display:flex;justify-content:space-between;align-items:center;padding:18px 7vw;background:#073642;color:white}.logo{font-size:34px;font-weight:900;color:#f2c300}.nav{display:flex;gap:20px}.nav a{color:white;text-decoration:none;font-weight:700}.hero{min-height:80vh;display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:80px 7vw;background:#073642;color:white}.tag{color:#f2c300;font-weight:900;text-transform:uppercase;letter-spacing:.12em}h1{font-size:clamp(44px,8vw,86px);line-height:.95;margin:0 0 18px}h2{font-size:clamp(34px,5vw,58px);margin:0 0 22px}p{font-size:20px;line-height:1.5}.btn{display:inline-block;background:#f2c300;color:#111;text-decoration:none;font-weight:900;padding:15px 24px;border-radius:999px}.visual{background:white;color:#073642;border-radius:28px;padding:34px;min-height:330px;display:flex;flex-direction:column;justify-content:center;box-shadow:0 20px 50px #0005}.visual b{font-size:72px;color:#f2c300}.section{padding:80px 7vw}.light{background:#f7f7f2}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{background:white;border-radius:22px;padding:26px;box-shadow:0 10px 30px #07364218}.contact{background:#073642;color:white}.foot{padding:30px 7vw;background:#111;color:white}@media(max-width:800px){.hero,.grid{grid-template-columns:1fr}.top{display:block}.nav{margin-top:16px;flex-wrap:wrap}h1{font-size:48px}}
+  </style>
+</head>
+<body>
+  <header class="top"><div class="logo">JFC</div><nav class="nav"><a href="#services">Services</a><a href="#realisations">Realisations</a><a href="#contact">Contact</a></nav></header>
+  <main>
+    <section class="hero">
+      <div><p class="tag">Renovation interieure</p><h1>JFC Renovation Interieure</h1><p>Cuisine, salle de bain, parquet, placo et travaux d'amenagement interieur.</p><a class="btn" href="#contact">Demander un devis</a></div>
+      <div class="visual"><b>JFC</b><p id="slide">Cuisine complete et plans de travail</p></div>
+    </section>
+    <section id="services" class="section light"><p class="tag">Services</p><h2>Des travaux propres et bien finis</h2><div class="grid"><article class="card"><h3>Cuisine complete</h3><p>Pose de meubles, plans de travail et finitions.</p></article><article class="card"><h3>Salle de bain</h3><p>Douche, meuble vasque, revetement et finitions.</p></article><article class="card"><h3>Parquet et placo</h3><p>Sols, cloisons, reprises et amenagement interieur.</p></article></div></section>
+    <section id="realisations" class="section"><p class="tag">Portfolio</p><h2>Realisations recentes</h2><p>Galerie compacte avec photos qui tournent pour eviter une page trop chargee. Les vraies photos seront integrees dans la prochaine version.</p></section>
+    <section id="contact" class="section contact"><p class="tag">Contact</p><h2>Un projet de renovation ?</h2><p>Telephone : 06 07 72 16 33</p><p>Email : jonatanfc97@gmail.com</p><p>SIRET : 93484902700016</p><a class="btn" href="mailto:jonatanfc97@gmail.com">Envoyer un email</a></section>
+  </main>
+  <footer class="foot">JFC Renovation Interieure - Cuisine - Salle de bain - Parquet - Placo</footer>
+  <script>const slides=['Cuisine complete et plans de travail','Salle de douche et meuble vasque','Parquet et sols','Placo et amenagement'];let i=0;setInterval(()=>{i=(i+1)%slides.length;document.getElementById('slide').textContent=slides[i]},3500);</script>
+</body>
 </html>
