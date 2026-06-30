@@ -1,3 +1,4 @@
+# CI verification branch trigger: keep this workflow as the consolidated JFC test suite.
 name: JFC site tests
 
 on:
