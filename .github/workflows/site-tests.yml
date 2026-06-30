@@ -54,8 +54,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
-      - name: Install Playwright Chromium with timeout
-        run: timeout 240s npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium with fallback
+        run: timeout 240s npx playwright install --with-deps chromium || timeout 180s npx playwright install chromium
       - name: Build static site
         run: npm run build
       - name: Run desktop core regression tests
@@ -82,8 +82,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
-      - name: Install Playwright WebKit with timeout
-        run: timeout 300s npx playwright install --with-deps webkit
+      - name: Install Playwright WebKit with fallback
+        run: timeout 300s npx playwright install --with-deps webkit || timeout 180s npx playwright install webkit
       - name: Build static site
         run: npm run build
       - name: Run mobile Safari-shape critical tests
@@ -110,8 +110,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
-      - name: Install Playwright Chromium with timeout
-        run: timeout 240s npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium with fallback
+        run: timeout 240s npx playwright install --with-deps chromium || timeout 180s npx playwright install chromium
       - name: Build static site
         run: npm run build
       - name: Run visual and accessibility tests
@@ -140,8 +140,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
-      - name: Install Playwright Chromium with timeout
-        run: timeout 240s npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium with fallback
+        run: timeout 240s npx playwright install --with-deps chromium || timeout 180s npx playwright install chromium
       - name: Build static site
         run: npm run build
       - name: Run lot 2 visible feature tests
@@ -168,8 +168,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
-      - name: Install Playwright browsers with timeout
-        run: timeout 420s npx playwright install --with-deps chromium firefox webkit
+      - name: Install Playwright browsers with fallback
+        run: timeout 420s npx playwright install --with-deps chromium firefox webkit || timeout 260s npx playwright install chromium firefox webkit
       - name: Build static site
         run: npm run build
       - name: Run lot 3 hardening tests
