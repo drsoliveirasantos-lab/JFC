@@ -38,19 +38,24 @@
     const etat = etatSelect?.value || 'A preciser';
     const delai = delaiSelect?.value || 'A preciser';
     const ville = cityInput?.value.trim() || 'A preciser';
-    const details = detailsInput?.value.trim() || 'Je peux envoyer des photos du chantier.';
+    const details = detailsInput?.value.trim() || 'Je peux envoyer des photos et dimensions du chantier.';
     return [
-      'Bonjour JFC, je souhaite un devis.',
+      'Bonjour JFC Renovation,',
       '',
-      `Type de bien : ${bien}`,
-      `Travaux : ${travaux}`,
-      `Etat du projet : ${etat}`,
-      `Delai souhaite : ${delai}`,
-      `Ville / secteur : ${ville}`,
+      'Je souhaite obtenir un devis personnalise pour un projet de renovation interieure.',
       '',
-      `Details : ${details}`,
+      'Voici ma demande :',
+      `- Type de bien : ${bien}`,
+      `- Travaux souhaites : ${travaux}`,
+      `- Etat du projet : ${etat}`,
+      `- Delai souhaite : ${delai}`,
+      `- Ville / secteur : ${ville}`,
+      `- Details : ${details}`,
       '',
-      'Je peux vous envoyer des photos du chantier.'
+      'Pouvez-vous me dire si vous pouvez intervenir et me proposer une estimation ou un rendez-vous ?',
+      '',
+      'Je peux vous envoyer des photos du chantier.',
+      'Merci.'
     ].join('\n');
   }
 
@@ -69,7 +74,7 @@
         ? `whatsapp://send?phone=33607721633&text=${encoded}`
         : `https://api.whatsapp.com/send?phone=33607721633&text=${encoded}`;
     }
-    if (mailLink) mailLink.href = `mailto:jonatanfc97@gmail.com?subject=${encodeURIComponent('Demande de devis JFC')}&body=${encoded}`;
+    if (mailLink) mailLink.href = `mailto:jonatanfc97@gmail.com?subject=${encodeURIComponent('Demande de devis JFC Renovation')}&body=${encoded}`;
   }
 
   function openPreview() {
