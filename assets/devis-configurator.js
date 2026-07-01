@@ -17,6 +17,9 @@
   const workInputs = Array.from(document.querySelectorAll('[data-work]'));
   const waLink = document.getElementById('quoteWhatsapp');
   const mailLink = document.getElementById('quoteEmail');
+  const previewButton = document.getElementById('quotePreviewButton');
+  const modal = document.getElementById('quotePreviewModal');
+  const closeButtons = Array.from(document.querySelectorAll('[data-close-preview]'));
 
   function checkedWorks() {
     const values = workInputs.filter(input => input.checked).map(input => input.value);
@@ -64,9 +67,31 @@
     if (mailLink) mailLink.href = `mailto:jonatanfc97@gmail.com?subject=${encodeURIComponent('Demande de devis JFC')}&body=${encoded}`;
   }
 
+  function openPreview() {
+    updateSummary();
+    if (!modal) return;
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePreview() {
+    if (!modal) return;
+    modal.hidden = true;
+    document.body.style.overflow = '';
+  }
+
   [bienSelect, etatSelect, delaiSelect, cityInput, detailsInput, ...workInputs].forEach(input => {
     input?.addEventListener('change', updateSummary);
     input?.addEventListener('input', updateSummary);
+  });
+
+  previewButton?.addEventListener('click', openPreview);
+  closeButtons.forEach(button => button.addEventListener('click', closePreview));
+  modal?.addEventListener('click', event => {
+    if (event.target === modal) closePreview();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && modal && !modal.hidden) closePreview();
   });
 
   updateSummary();
