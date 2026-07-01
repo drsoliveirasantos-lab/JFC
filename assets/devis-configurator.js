@@ -1,18 +1,4 @@
 (() => {
-  const selected = {
-    bien: 'Appartement',
-    travaux: ['Cuisine'],
-    etat: 'A renover',
-    delai: 'Ce mois-ci'
-  };
-
-  const labels = {
-    bien: 'Bien',
-    travaux: 'Travaux',
-    etat: 'Projet',
-    delai: 'Delai'
-  };
-
   const summaryEls = {
     bien: document.querySelector('[data-summary="bien"]'),
     travaux: document.querySelector('[data-summary="travaux"]'),
@@ -22,26 +8,40 @@
     details: document.querySelector('[data-summary="details"]')
   };
 
+  const bienSelect = document.getElementById('quoteBien');
+  const etatSelect = document.getElementById('quoteEtat');
+  const delaiSelect = document.getElementById('quoteDelai');
   const cityInput = document.getElementById('quoteCity');
   const detailsInput = document.getElementById('quoteDetails');
+  const workSummary = document.getElementById('quoteWorkSummary');
+  const workInputs = Array.from(document.querySelectorAll('[data-work]'));
   const waLink = document.getElementById('quoteWhatsapp');
   const mailLink = document.getElementById('quoteEmail');
 
-  function formatValue(value) {
-    if (Array.isArray(value)) return value.length ? value.join(', ') : 'Non precise';
-    return value || 'Non precise';
+  function checkedWorks() {
+    const values = workInputs.filter(input => input.checked).map(input => input.value);
+    return values.length ? values : ['Non precise'];
+  }
+
+  function updateWorkSummary(values = checkedWorks()) {
+    if (!workSummary) return;
+    workSummary.textContent = values.length === 1 ? values[0] : `${values.length} types selectionnes`;
   }
 
   function buildMessage() {
+    const bien = bienSelect?.value || 'A preciser';
+    const travaux = checkedWorks().join(', ');
+    const etat = etatSelect?.value || 'A preciser';
+    const delai = delaiSelect?.value || 'A preciser';
     const ville = cityInput?.value.trim() || 'A preciser';
     const details = detailsInput?.value.trim() || 'Je peux envoyer des photos du chantier.';
     return [
       'Bonjour JFC, je souhaite un devis.',
       '',
-      `Type de bien : ${formatValue(selected.bien)}`,
-      `Travaux : ${formatValue(selected.travaux)}`,
-      `Etat du projet : ${formatValue(selected.etat)}`,
-      `Delai souhaite : ${formatValue(selected.delai)}`,
+      `Type de bien : ${bien}`,
+      `Travaux : ${travaux}`,
+      `Etat du projet : ${etat}`,
+      `Delai souhaite : ${delai}`,
       `Ville / secteur : ${ville}`,
       '',
       `Details : ${details}`,
@@ -51,43 +51,23 @@
   }
 
   function updateSummary() {
-    Object.keys(labels).forEach(key => {
-      if (summaryEls[key]) summaryEls[key].textContent = formatValue(selected[key]);
-    });
-    const ville = cityInput?.value.trim() || 'A preciser';
-    const details = detailsInput?.value.trim() || 'Photos + dimensions a envoyer';
-    if (summaryEls.ville) summaryEls.ville.textContent = ville;
-    if (summaryEls.details) summaryEls.details.textContent = details;
+    const works = checkedWorks();
+    updateWorkSummary(works);
+    if (summaryEls.bien) summaryEls.bien.textContent = bienSelect?.value || 'A preciser';
+    if (summaryEls.travaux) summaryEls.travaux.textContent = works.join(', ');
+    if (summaryEls.etat) summaryEls.etat.textContent = etatSelect?.value || 'A preciser';
+    if (summaryEls.delai) summaryEls.delai.textContent = delaiSelect?.value || 'A preciser';
+    if (summaryEls.ville) summaryEls.ville.textContent = cityInput?.value.trim() || 'A preciser';
+    if (summaryEls.details) summaryEls.details.textContent = detailsInput?.value.trim() || 'Photos + dimensions a envoyer';
     const encoded = encodeURIComponent(buildMessage());
     if (waLink) waLink.href = `https://wa.me/33607721633?text=${encoded}`;
     if (mailLink) mailLink.href = `mailto:jonatanfc97@gmail.com?subject=${encodeURIComponent('Demande de devis JFC')}&body=${encoded}`;
   }
 
-  document.querySelectorAll('[data-choice]').forEach(button => {
-    const group = button.dataset.choice;
-    const value = button.dataset.value;
-    const isMulti = button.dataset.multi === 'true';
-
-    button.addEventListener('click', () => {
-      if (isMulti) {
-        const current = new Set(selected[group] || []);
-        if (current.has(value)) current.delete(value);
-        else current.add(value);
-        selected[group] = Array.from(current);
-        button.classList.toggle('is-selected', current.has(value));
-        button.setAttribute('aria-pressed', current.has(value) ? 'true' : 'false');
-      } else {
-        selected[group] = value;
-        document.querySelectorAll(`[data-choice="${group}"]`).forEach(other => {
-          const active = other === button;
-          other.classList.toggle('is-selected', active);
-          other.setAttribute('aria-pressed', active ? 'true' : 'false');
-        });
-      }
-      updateSummary();
-    });
+  [bienSelect, etatSelect, delaiSelect, cityInput, detailsInput, ...workInputs].forEach(input => {
+    input?.addEventListener('change', updateSummary);
+    input?.addEventListener('input', updateSummary);
   });
 
-  [cityInput, detailsInput].forEach(input => input?.addEventListener('input', updateSummary));
   updateSummary();
 })();
