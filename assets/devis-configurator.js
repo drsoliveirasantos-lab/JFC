@@ -20,6 +20,7 @@
   const previewButton = document.getElementById('quotePreviewButton');
   const modal = document.getElementById('quotePreviewModal');
   const closeButtons = Array.from(document.querySelectorAll('[data-close-preview]'));
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   function checkedWorks() {
     const values = workInputs.filter(input => input.checked).map(input => input.value);
@@ -63,7 +64,11 @@
     if (summaryEls.ville) summaryEls.ville.textContent = cityInput?.value.trim() || 'A preciser';
     if (summaryEls.details) summaryEls.details.textContent = detailsInput?.value.trim() || 'Photos + dimensions a envoyer';
     const encoded = encodeURIComponent(buildMessage());
-    if (waLink) waLink.href = `https://api.whatsapp.com/send?phone=33607721633&text=${encoded}`;
+    if (waLink) {
+      waLink.href = isMobile
+        ? `whatsapp://send?phone=33607721633&text=${encoded}`
+        : `https://api.whatsapp.com/send?phone=33607721633&text=${encoded}`;
+    }
     if (mailLink) mailLink.href = `mailto:jonatanfc97@gmail.com?subject=${encodeURIComponent('Demande de devis JFC')}&body=${encoded}`;
   }
 
