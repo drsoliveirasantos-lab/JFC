@@ -2,32 +2,22 @@
   const phone = '33607721633';
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  function getTextFromLink(link) {
+  function getUrl(link) {
     try {
-      const href = link.getAttribute('href') || '';
-      const url = new URL(href, window.location.href);
-      return url.searchParams.get('text') || '';
+      return new URL(link.getAttribute('href') || '', window.location.href);
     } catch (_) {
-      return '';
+      return null;
     }
-  }
-
-  function buildUrls(text) {
-    const suffix = text ? `?text=${encodeURIComponent(text)}` : '';
-    const appSuffix = text ? `&text=${encodeURIComponent(text)}` : '';
-    const fallback = `https://wa.me/${phone}${suffix}`;
-    const iosApp = `whatsapp://send?phone=${phone}${appSuffix}`;
-    const androidIntent = `intent://send?phone=${phone}${appSuffix}#Intent;scheme=whatsapp;package=com.whatsapp;S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
-    return { fallback, iosApp, androidIntent };
   }
 
   document.querySelectorAll('a[href*="wa.me"], a[href^="whatsapp://"]').forEach((link) => {
     link.addEventListener('click', (event) => {
       if (!isMobile) return;
-      event.preventDefault();
+      const url = getUrl(link);
+      if (url?.searchParams?.get('text')) return;
 
-      const text = getTextFromLink(link);
-      const { fallback, iosApp, androidIntent } = buildUrls(text);
+      event.preventDefault();
+      const fallback = `https://wa.me/${phone}`;
 
       let pageHidden = false;
       const markHidden = () => { pageHidden = true; };
@@ -36,7 +26,11 @@
         if (document.hidden) pageHidden = true;
       }, { once: true });
 
-      window.location.href = /Android/i.test(navigator.userAgent) ? androidIntent : iosApp;
+      const appUrl = /Android/i.test(navigator.userAgent)
+        ? `intent://send?phone=${phone}#Intent;scheme=whatsapp;package=com.whatsapp;S.browser_fallback_url=${encodeURIComponent(fallback)};end`
+        : `whatsapp://send?phone=${phone}`;
+
+      window.location.href = appUrl;
       window.setTimeout(() => {
         if (!pageHidden) window.location.href = fallback;
       }, 1100);
