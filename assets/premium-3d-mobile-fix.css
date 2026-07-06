@@ -1,0 +1,36 @@
+/* Mobile correction layer for the premium 3D homepage */
+@media(max-width:900px){
+  body{padding-bottom:104px}
+  .hero-premium{background:linear-gradient(180deg,#fbf5dc 0%,#fff 58%,#eef5f6 100%)}
+  .hero-premium>.container:first-child{display:grid;grid-template-columns:1fr!important;gap:22px!important;padding:46px 0 22px!important}
+  .hero-premium .kicker{font-size:15px;line-height:1.25;letter-spacing:.18em;margin-bottom:16px}
+  .hero-premium h1{font-size:clamp(44px,12vw,62px)!important;line-height:.98!important;letter-spacing:-.055em;margin-bottom:18px}
+  .hero-premium .lead{font-size:20px!important;line-height:1.45!important;color:#4d5964;margin-bottom:0}
+  .hero-premium .actions{display:grid!important;grid-template-columns:1fr!important;gap:10px!important;margin-top:26px!important}
+  .hero-premium .actions .btn{width:100%;min-height:60px;border-radius:999px;font-size:18px}
+  .hero-premium .premium-proof{display:grid!important;grid-template-columns:1fr!important;gap:10px!important;margin-top:18px!important}
+  .hero-premium .premium-proof span{border-radius:22px;padding:18px 20px;background:rgba(255,255,255,.92);box-shadow:0 10px 28px rgba(7,54,66,.07)}
+  .visual3d{min-height:330px!important;margin:6px 0 0!important;overflow:hidden;border-radius:32px;background:#fff;border:1px solid rgba(7,54,66,.1);box-shadow:0 18px 48px rgba(7,54,66,.13)}
+  .blueprint-grid{inset:0!important;border-radius:32px!important;border:0!important;box-shadow:none!important;opacity:.72;background-size:34px 34px,34px 34px,auto!important}
+  .scene3d{inset:-88px -96px 32px -92px!important;transform:scale(.58)!important;transform-origin:center top!important;opacity:.92}
+  .house3d{animation:none!important}
+  .trust-badges3d{display:none!important}
+  .floating-card3d{left:18px!important;right:18px!important;bottom:16px!important;width:auto!important;display:grid;grid-template-columns:96px 1fr;align-items:center;border-radius:24px!important;background:rgba(255,255,255,.96)!important;box-shadow:0 14px 34px rgba(7,54,66,.18)!important}
+  .floating-card3d img{height:92px!important;border-radius:22px 0 0 22px;object-fit:cover}
+  .floating-card3d .hero-label{padding:12px 14px!important;font-size:16px;line-height:1.2;color:#111821!important;background:transparent!important}
+  .premium-services{grid-template-columns:1fr!important;gap:14px!important;margin-top:8px!important;padding-top:0!important;padding-bottom:34px!important}
+  .premium-services .mini-service{border-radius:26px!important;padding:22px!important;box-shadow:0 14px 34px rgba(7,54,66,.1)!important}
+  .mini-service b{width:48px;height:48px;border-radius:16px;font-size:22px;margin-bottom:14px}
+  .mini-service h3{font-size:30px;line-height:1.05;margin-bottom:12px}
+  .mini-service p{font-size:20px;line-height:1.45;color:#66707a}
+  .floating{left:10px!important;right:10px!important;bottom:calc(10px + env(safe-area-inset-bottom))!important;gap:10px!important;z-index:80!important}
+  .floating a{min-height:58px;display:grid;place-items:center;border-radius:999px;font-size:18px}
+}
+@media(max-width:430px){
+  .hero-premium>.container:first-child{padding-top:42px!important}
+  .visual3d{min-height:300px!important}
+  .scene3d{inset:-98px -120px 26px -118px!important;transform:scale(.52)!important}
+  .floating-card3d{grid-template-columns:82px 1fr;left:14px!important;right:14px!important;bottom:14px!important}
+  .floating-card3d img{height:82px!important}
+  .floating-card3d .hero-label{font-size:15px}
+}
