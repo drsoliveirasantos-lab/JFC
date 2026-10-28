@@ -163,3 +163,16 @@ row use native lazy loading. The initial hero keeps high fetch priority.
 Browser screenshot suites scroll through lazy images and wait for decoding
 before checking all photos. Named contact landmarks and visually hidden section
 headings preserve screen-reader navigation without changing the visual layout.
+
+## Quote and enlarged-menu safeguards
+
+The generic quote starts without an imposed work type. Service links can select
+`cuisine`, `bain`, `sol` or `cloisons` through the allowlisted `travaux` query.
+The selection stays editable. A work choice or project description is sufficient;
+name, phone, email and city remain optional. Provided phone/email values are
+validated before preview and before the direct email link. Associated inline
+errors preserve input and focus the first correction.
+The mobile header scrolls within the viewport when text is enlarged or the screen
+is short. Consolidated tests exercise Contact/Devis at 844x390 with 200% text,
+empty/invalid quote paths, optional-contact success, floor preselection and
+functional field-border contrast of at least 3:1.

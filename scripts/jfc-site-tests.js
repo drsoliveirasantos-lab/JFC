@@ -130,6 +130,7 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
             brokenImages,
             imageAltMissing,
             emptyLinks,
+            usefulMicrotext: [...document.querySelectorAll('.brand small,.hero .kicker,.hero-frame small')].map(el => parseFloat(getComputedStyle(el).fontSize)),
             overflow,
             navLinks: [...document.querySelectorAll('nav a')].map(a => a.getAttribute('href')).filter(Boolean),
             hasMain: !!document.querySelector('main'),
@@ -138,6 +139,7 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
             text: visibleText
           };
         });
+        assert(metrics.usefulMicrotext.every(size => size >= 12), `${label} ${route.path} useful microtext below 12px`, failures);
         assert(metrics.title.length > 0, `${label} ${route.path} missing title`, failures);
         assert(metrics.hasMain, `${label} ${route.path} missing main`, failures);
         assert(metrics.brokenImages.length === 0, `${label} ${route.path} broken images: ${metrics.brokenImages.join(', ')}`, failures);
@@ -171,6 +173,52 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
         await uiPage.goto(`${baseUrl}/devis/`, { waitUntil: 'networkidle' });
         lines.push('mobile menu: open, Escape, route navigation OK');
       }
+      const fieldContrast = await uiPage.locator('#quoteEmail').evaluate(input => {
+        const style = getComputedStyle(input);
+        const luminance = value => {
+          const c = value.match(/[\d.]+/g).slice(0, 3).map(Number).map(n => n / 255).map(n => n <= .04045 ? n / 12.92 : ((n + .055) / 1.055) ** 2.4);
+          return .2126 * c[0] + .7152 * c[1] + .0722 * c[2];
+        };
+        const values = [luminance(style.borderTopColor), luminance(style.backgroundColor)].sort((a, b) => a - b);
+        return (values[1] + .05) / (values[0] + .05);
+      });
+      assert(fieldContrast >= 3, `form boundary contrast below 3:1 (${fieldContrast.toFixed(2)})`, failures);
+      assert(await uiPage.locator('[data-work]:checked').count() === 0, 'generic quote must not impose Cuisine', failures);
+      await uiPage.click('#quotePreviewButton');
+      assert(await uiPage.locator('#quotePreviewModal').isHidden(), 'empty quote must not open preview', failures);
+      assert(await uiPage.locator('#quoteWorkError').isVisible(), 'empty quote needs a project error', failures);
+      await uiPage.evaluate(() => document.addEventListener('click', event => {
+        if (event.target.closest('#quickEmail')) {
+          window.quoteEmailWasBlocked = event.defaultPrevented;
+          event.preventDefault(); // Never launch an email client during tests.
+        }
+      }));
+      await uiPage.click('#quickEmail');
+      assert(await uiPage.evaluate(() => window.quoteEmailWasBlocked), 'quick email bypasses empty quote validation', failures);
+      await uiPage.fill('#quoteDetails', 'Rénovation à préciser');
+      await uiPage.fill('#quotePhone', 'abc');
+      await uiPage.fill('#quoteEmail', 'pas-un-email');
+      await uiPage.click('#quotePreviewButton');
+      assert(await uiPage.locator('#quotePreviewModal').isHidden(), 'invalid contact must not open preview', failures);
+      assert(await uiPage.getAttribute('#quoteEmail', 'aria-invalid') === 'true', 'invalid email needs an associated error', failures);
+      assert(await uiPage.getAttribute('#quotePhone', 'aria-invalid') === 'true', 'invalid phone needs an associated error', failures);
+      await uiPage.click('#quickEmail');
+      assert(await uiPage.evaluate(() => window.quoteEmailWasBlocked), 'quick email bypasses invalid contact validation', failures);
+      await uiPage.fill('#quotePhone', '');
+      await uiPage.fill('#quoteEmail', '');
+      await uiPage.click('#quotePreviewButton');
+      assert(await uiPage.locator('#quotePreviewModal').isVisible(), 'contact fields must remain optional for a described project', failures);
+      await uiPage.keyboard.press('Escape');
+      await uiPage.click('#quickEmail');
+      assert(!await uiPage.evaluate(() => window.quoteEmailWasBlocked), 'valid quick email should remain available', failures);
+      await uiPage.goto(`${baseUrl}/services/`, { waitUntil: 'networkidle' });
+      await uiPage.getByRole('link', { name: 'Demander un devis sol', exact: true }).click();
+      await uiPage.waitForURL('**/devis/?travaux=sol');
+      assert(await uiPage.locator('[data-work][value="Parquet / sol"]').isChecked(), 'floor CTA must select Parquet / sol', failures);
+      assert(!await uiPage.locator('[data-work][value="Cuisine"]').isChecked(), 'floor CTA must not select Cuisine', failures);
+      await uiPage.goto(`${baseUrl}/devis/?travaux=inconnu`, { waitUntil: 'networkidle' });
+      assert(await uiPage.locator('[data-work]:checked').count() === 0, 'unknown service query must not select a work type', failures);
+      lines.push('quote audit regressions: empty/invalid blocked on preview and email, optional contact retained, floor context preserved');
       await uiPage.fill('#quoteName', 'Test rénovation');
       await uiPage.fill('#quoteCity', 'Ville test');
       await uiPage.fill('#quoteEmail', 'test@example.com');
@@ -194,6 +242,32 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
       lines.push('quote: multiple works, preview, encoded WhatsApp/email, back/edit and Escape OK (no message sent)');
     } catch (error) { fail(`menu/quote regression: ${error.message}`, failures); }
     finally { await uiPage.close(); }
+    const zoomMenu = await context.newPage();
+    try {
+      await zoomMenu.setViewportSize({ width: 844, height: 390 });
+      for (const route of ['/contact/', '/devis/']) {
+        await zoomMenu.goto(baseUrl, { waitUntil: 'networkidle' });
+        await zoomMenu.addStyleTag({ content: 'html{font-size:200%}' });
+        await zoomMenu.click('.menu-toggle');
+        const link = zoomMenu.locator(`#navigation a[href="${route}"]`);
+        await link.scrollIntoViewIfNeeded();
+        const box = await link.boundingBox();
+        assert(box && box.y >= 0 && box.y + box.height <= 390, `landscape 200% ${route} outside viewport`, failures);
+        if (route === '/devis/') await zoomMenu.screenshot({ path: path.join(shotsDir, `${label}-lot1-landscape-menu.png`) });
+        await link.click({ timeout: 5000 });
+        assert(new URL(zoomMenu.url()).pathname === route, `landscape 200% ${route} navigation failed`, failures);
+      }
+      lines.push('landscape 844x390 text 200%: Contact and Devis visible, clickable and navigable');
+      await zoomMenu.setViewportSize({ width: 320, height: 844 });
+      for (const route of ['/realisations/', '/devis/']) {
+        await zoomMenu.goto(baseUrl + route, { waitUntil: 'networkidle' });
+        await zoomMenu.addStyleTag({ content: 'html{font-size:200%}' });
+        const overflow = await zoomMenu.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+        assert(overflow === 0, `320px text 200% ${route} overflow ${overflow}px`, failures);
+      }
+      lines.push('320px text 200%: gallery and quote headings wrap without overflow');
+    } catch (error) { fail(`landscape enlarged menu: ${error.message}`, failures); }
+    finally { await zoomMenu.close(); }
     await context.close();
     if (checks.lightbox) {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });

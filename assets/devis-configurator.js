@@ -29,6 +29,12 @@
   const previewButton = document.getElementById('quotePreviewButton');
   const modal = document.getElementById('quotePreviewModal');
   const closeButtons = Array.from(document.querySelectorAll('[data-close-preview]'));
+  const workControl = document.querySelector('.multi-dropdown summary');
+  const validationNotice = document.getElementById('quoteValidation');
+  let validationAttempted = false;
+  const serviceChoices = { cuisine: 'Cuisine', bain: 'Salle de bain', sol: 'Parquet / sol', cloisons: 'Placo / cloison' };
+  const requestedWork = serviceChoices[new URLSearchParams(window.location.search).get('travaux')];
+  if (requestedWork) workInputs.forEach(input => { input.checked = input.value === requestedWork; });
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   function valueOrDefault(input, fallback = 'À préciser') {
@@ -42,7 +48,7 @@
 
   function updateWorkSummary(values = checkedWorks()) {
     if (!workSummary) return;
-    workSummary.textContent = values.length === 1 ? values[0] : `${values.length} types sélectionnés`;
+    workSummary.textContent = values[0] === 'Non précisé' ? 'Choisir les travaux' : values.length === 1 ? values[0] : `${values.length} types sélectionnés`;
   }
 
   function buildMessage() {
@@ -106,7 +112,34 @@
     if (quickEmail) quickEmail.href = mailHref;
   }
 
+  function validateRequest(focusError = true) {
+    validationAttempted = true;
+    const errors = [];
+    function setError(control, id, message) {
+      const element = document.getElementById(id);
+      element.textContent = message;
+      element.hidden = !message;
+      if (message) { control.setAttribute('aria-invalid', 'true'); errors.push(control); }
+      else control.removeAttribute('aria-invalid');
+    }
+    const hasProject = workInputs.some(input => input.checked) || detailsInput.value.trim();
+    setError(workControl, 'quoteWorkError', hasProject ? '' : 'Choisissez un type de travaux ou décrivez votre besoin dans le champ Message.');
+    const phone = phoneInput.value.trim();
+    const digits = phone.replace(/\D/g, '');
+    const phoneValid = !phone || (/^\+?[\d\s().-]+$/.test(phone) && digits.length >= 7 && digits.length <= 15);
+    setError(phoneInput, 'quotePhoneError', phoneValid ? '' : 'Vérifiez le numéro : 7 à 15 chiffres, avec indicatif si besoin.');
+    setError(emailInput, 'quoteEmailError', !emailInput.value.trim() || emailInput.validity.valid ? '' : 'Vérifiez l’adresse email, par exemple nom@exemple.fr.');
+    validationNotice.hidden = errors.length === 0;
+    validationNotice.textContent = errors.length ? 'Vérifiez les informations signalées avant de continuer.' : '';
+    if (errors.length && focusError) {
+      errors[0].focus();
+      errors[0].scrollIntoView({ block: 'center', behavior: 'instant' });
+    }
+    return errors.length === 0;
+  }
+
   function openPreview() {
+    if (!validateRequest()) return;
     updateSummary();
     if (!modal) return;
     modal.hidden = false;
@@ -122,11 +155,16 @@
   }
 
   [nameInput, phoneInput, emailInput, bienSelect, etatSelect, delaiSelect, cityInput, contactSelect, detailsInput, ...workInputs].forEach(input => {
-    input?.addEventListener('change', updateSummary);
-    input?.addEventListener('input', updateSummary);
+    const update = () => { updateSummary(); if (validationAttempted) validateRequest(false); };
+    input?.addEventListener('change', update);
+    input?.addEventListener('input', update);
   });
 
   previewButton?.addEventListener('click', openPreview);
+  quickEmail?.addEventListener('click', event => {
+    if (!validateRequest()) { event.preventDefault(); return; }
+    updateSummary();
+  });
   closeButtons.forEach(button => button.addEventListener('click', closePreview));
   modal?.addEventListener('click', event => {
     if (event.target === modal) closePreview();
