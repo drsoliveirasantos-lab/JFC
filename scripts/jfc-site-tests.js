@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import { chromium, firefox, webkit } from 'playwright';
+import { checkProjectGallery } from './project-gallery-checks.js';
 
 const mode = process.argv[2] || 'all';
 const root = process.cwd();
@@ -170,6 +171,7 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
       }
     }
     await checkSpecialtyRoutes(context, baseUrl, lines, failures);
+    await checkProjectGallery(context, baseUrl, lines, failures);
     const uiPage = await context.newPage();
     try {
       await uiPage.goto(`${baseUrl}/devis/`, { waitUntil: 'networkidle' });
@@ -284,34 +286,6 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
     console.log(`[${label}] closing context`);
     await context.close();
     console.log(`[${label}] context closed`);
-    if (checks.lightbox) {
-      const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
-      try {
-        await page.goto(`${baseUrl}/realisations/?test=lightbox`, { waitUntil: 'networkidle' });
-        await page.click('.js-lightbox');
-        await page.waitForSelector('.lightbox.open', { timeout: 5000 });
-        const openSrc = await page.$eval('#lightboxImg', el => el.getAttribute('src'));
-        assert(!!openSrc, 'lightbox opens without image source', failures);
-        await page.click('#lightboxClose');
-        await page.waitForFunction(() => !document.querySelector('.lightbox')?.classList.contains('open'));
-        for (const [width,height] of [[390,844],[844,390]]) {
-          await page.setViewportSize({width,height});
-          for (let index=0; index<await page.locator('.js-lightbox').count(); index++) {
-            await page.locator('.js-lightbox').nth(index).click();
-            for (const selector of ['#lightboxClose','#lightboxImg','#lightboxOriginal']) {
-              const box=await page.locator(selector).boundingBox();
-              assert(box && box.y>=0 && box.y+box.height<=height && box.x>=0 && box.x+box.width<=width, `lightbox ${index} ${selector} clipped at ${width}x${height}`, failures);
-            }
-            await page.click('#lightboxClose');
-          }
-        }
-        lines.push('lightbox: all ten photos and controls fit portrait/landscape; close works');
-      } catch (error) {
-        fail(`lightbox threw: ${error?.message || error}`, failures);
-      } finally {
-        await page.close().catch(() => {});
-      }
-    }
     if (checks.carousel) {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
       try {

@@ -205,3 +205,11 @@ The crop audit compares all 41 image usages (including 5 carousel states and
 Original image bytes are preserved. The about SVG remains an illustration,
 not verified photographic evidence; its existing identity wording needs owner
 confirmation separately.
+
+## Project descriptions and gallery filters
+
+`assets/project-gallery.js` owns shared per-photo descriptions, filtering and the
+progressively enhanced viewer. See `docs/project-photo-descriptions.md` for the
+source-by-source evidence and the one bathroom with user-confirmed work.
+Gallery and specialty photo links share the same viewer and metadata. No-JS
+links still open the original image; gallery cards stay complete and visible.
