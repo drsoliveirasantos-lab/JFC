@@ -78,7 +78,8 @@ export async function checkProjectGallery(context, baseUrl, lines, failures) {
       check(!await fallback.locator('.gallery-filters').isVisible(),'no-JS filters should not be shown');
       console.log('[gallery] no-JavaScript original photo navigation');
       await Promise.all([
-        fallback.waitForURL('**/cuisine-blanche-plan-bois.webp',{waitUntil:'domcontentloaded'}),
+        // Firefox native image documents do not emit DOMContentLoaded.
+        fallback.waitForURL('**/cuisine-blanche-plan-bois.webp',{waitUntil:'commit'}),
         fallback.locator('.js-lightbox').first().click({noWaitAfter:true})
       ]);
       await fallback.waitForFunction(()=>document.images.length>0&&document.images[0].complete&&document.images[0].naturalWidth>0);
