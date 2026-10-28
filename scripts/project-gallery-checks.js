@@ -31,6 +31,7 @@ export async function checkProjectGallery(context, baseUrl, lines, failures) {
       await page.goBack({waitUntil:'networkidle'});
       check(await page.locator('.project:visible').count()===1 && await page.locator('[data-filter="buanderie"]').getAttribute('aria-pressed')==='true',`${width}: browser back lost filter`);
       for (const route of routes) {
+        console.log(`[gallery] ${width}x${height} ${route}: open every photo`);
         await page.goto(baseUrl+route,{waitUntil:'networkidle'});
         await page.evaluate(scale=>document.documentElement.style.fontSize=`${scale}%`,scale);
         const links=page.locator('.js-lightbox');
@@ -68,15 +69,22 @@ export async function checkProjectGallery(context, baseUrl, lines, failures) {
       }
     }
     check(descriptions.size===12 && new Set(descriptions.values()).size===12,'twelve distinct source descriptions expected');
+    console.log('[gallery] all source/viewports complete; no-JavaScript navigation');
     const noJs=await context.browser().newContext({javaScriptEnabled:false,viewport:{width:320,height:740}});
     try {
       noJs.setDefaultTimeout(10000);noJs.setDefaultNavigationTimeout(15000);
       const fallback=await noJs.newPage();await fallback.goto(`${baseUrl}/realisations/?categorie=bain`);
       check(await fallback.locator('.project:visible').count()===10,'no-JS gallery must stay complete');
       check(!await fallback.locator('.gallery-filters').isVisible(),'no-JS filters should not be shown');
-      await fallback.locator('.js-lightbox').first().click();await fallback.waitForURL('**/cuisine-blanche-plan-bois.webp');
-    }finally{await noJs.close();}
+      console.log('[gallery] no-JavaScript original photo navigation');
+      await Promise.all([
+        fallback.waitForURL('**/cuisine-blanche-plan-bois.webp',{waitUntil:'domcontentloaded'}),
+        fallback.locator('.js-lightbox').first().click({noWaitAfter:true})
+      ]);
+      await fallback.waitForFunction(()=>document.images.length>0&&document.images[0].complete&&document.images[0].naturalWidth>0);
+      console.log('[gallery] no-JavaScript original photo loaded');
+    }finally{console.log('[gallery] closing no-JavaScript context');await noJs.close();console.log('[gallery] no-JavaScript context closed');}
     lines.push('gallery descriptions/filters: 12 sources, 17 usages x4 viewports; category counts, repeat/close/reload, keyboard, 200% scroll, full images, attribution and no-JS PASS');
   }catch(error){failures.push(`gallery descriptions/filters: ${error.message}`);}
-  finally{await page.close();}
+  finally{console.log('[gallery] closing gallery page');await page.close();console.log('[gallery] gallery page closed');}
 }
