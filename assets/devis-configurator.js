@@ -111,12 +111,14 @@
     if (!modal) return;
     modal.hidden = false;
     document.body.style.overflow = 'hidden';
+    closeButtons[0]?.focus();
   }
 
   function closePreview() {
     if (!modal) return;
     modal.hidden = true;
     document.body.style.overflow = '';
+    previewButton?.focus();
   }
 
   [nameInput, phoneInput, emailInput, bienSelect, etatSelect, delaiSelect, cityInput, contactSelect, detailsInput, ...workInputs].forEach(input => {
@@ -130,7 +132,14 @@
     if (event.target === modal) closePreview();
   });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && modal && !modal.hidden) closePreview();
+    if (!modal || modal.hidden) return;
+    if (event.key === 'Escape') closePreview();
+    if (event.key === 'Tab') {
+      const controls = [...modal.querySelectorAll('button, a[href]')];
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
   });
 
   updateSummary();

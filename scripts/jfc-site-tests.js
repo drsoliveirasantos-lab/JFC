@@ -14,8 +14,8 @@ fs.mkdirSync(shotsDir, { recursive: true });
 
 const pages = [
   { name: 'home', path: '/', must: ['JFC Renovation', 'Demander un devis'] },
-  { name: 'services', path: '/services/', must: ['Services', 'Cuisine'] },
-  { name: 'realisations', path: '/realisations/', must: ['Realisations', 'Touchez une photo'] },
+  { name: 'services', path: '/services/', must: ['Des solutions concrètes', 'Cuisine'] },
+  { name: 'realisations', path: '/realisations/', must: ['Réalisations', 'Touchez une photo'] },
   { name: 'a-propos', path: '/a-propos/', must: ['Jonatan Ferreira Coelho', 'Artisan'] },
   { name: 'contact', path: '/contact/', must: ['Contacter JFC', 'WhatsApp'] },
   { name: 'devis', path: '/devis/', must: ['Demander un devis', 'WhatsApp'] }
@@ -151,6 +151,44 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
         await page.close().catch(() => {});
       }
     }
+    const uiPage = await context.newPage();
+    try {
+      await uiPage.goto(`${baseUrl}/devis/`, { waitUntil: 'networkidle' });
+      if (viewport.width <= 900) {
+        await uiPage.click('.menu-toggle');
+        assert(await uiPage.getAttribute('.menu-toggle', 'aria-expanded') === 'true', 'mobile menu did not open', failures);
+        assert(await uiPage.locator('#navigation a').count() === 5, 'mobile menu must retain five routes', failures);
+        await uiPage.keyboard.press('Escape');
+        assert(await uiPage.getAttribute('.menu-toggle', 'aria-expanded') === 'false', 'Escape did not close menu', failures);
+        await uiPage.click('.menu-toggle');
+        await uiPage.locator('#navigation a[href="/services/"]').click();
+        await uiPage.waitForURL('**/services/');
+        await uiPage.goto(`${baseUrl}/devis/`, { waitUntil: 'networkidle' });
+        lines.push('mobile menu: open, Escape, route navigation OK');
+      }
+      await uiPage.fill('#quoteName', 'Test rénovation');
+      await uiPage.fill('#quoteCity', 'Ville test');
+      await uiPage.fill('#quoteEmail', 'test@example.com');
+      await uiPage.fill('#quoteDetails', 'Cuisine & finitions — demande de test');
+      await uiPage.click('.multi-dropdown summary');
+      await uiPage.check('[data-work][value="Salle de bain"]');
+      await uiPage.click('#quotePreviewButton');
+      assert(await uiPage.locator('#quotePreviewModal').isVisible(), 'quote preview did not open', failures);
+      assert((await uiPage.textContent('[data-summary="travaux"]')).includes('Salle de bain'), 'quote lost selected work', failures);
+      const wa = new URL(await uiPage.getAttribute('#quoteWhatsapp', 'href'));
+      assert(wa.searchParams.get('phone') === '33607721633', 'quote WhatsApp recipient changed', failures);
+      assert(wa.searchParams.get('text')?.includes('Cuisine & finitions — demande de test'), 'quote WhatsApp text incomplete', failures);
+      const mail = await uiPage.getAttribute('#quoteEmailButton', 'href');
+      assert(mail.startsWith('mailto:jonatanfc97@gmail.com?') && decodeURIComponent(mail).includes('Ville test'), 'quote email recipient or body incorrect', failures);
+      await uiPage.locator('.quote-back').click();
+      assert(await uiPage.locator('#quotePreviewModal').isHidden(), 'quote back did not close preview', failures);
+      assert(await uiPage.inputValue('#quoteName') === 'Test rénovation', 'quote back lost form values', failures);
+      await uiPage.click('#quotePreviewButton');
+      await uiPage.keyboard.press('Escape');
+      assert(await uiPage.locator('#quotePreviewModal').isHidden(), 'quote Escape did not close preview', failures);
+      lines.push('quote: multiple works, preview, encoded WhatsApp/email, back/edit and Escape OK (no message sent)');
+    } catch (error) { fail(`menu/quote regression: ${error.message}`, failures); }
+    finally { await uiPage.close(); }
     await context.close();
     if (checks.lightbox) {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });

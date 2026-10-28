@@ -142,3 +142,17 @@ hierarchy for page, section, category, item, description/price and metadata role
 AGENTS and Copilot require it before UI work and require its inclusion in future
 site repositories. Compact interface text and long-form learning text have
 different readability needs; both keep details subordinate to their own heading.
+
+## Visual refresh — October 2026
+
+The six existing page URLs share `style.css` (design tokens and layout) and
+`assets/mobile-fixes.css` (responsive rules, lightbox and quote refinements).
+The quote page also loads `assets/devis-configurator.css` before the refinements.
+Earlier decorative stylesheets remain in the repository for traceability but
+are no longer linked by the pages; do not reintroduce their overlapping rules.
+`assets/site-ui.js` provides the progressive-enhancement mobile menu, and
+`assets/home-carousel.js` controls the existing project slideshow with pause and
+reduced-motion support. Without JavaScript, navigation links remain visible.
+Real project photos, contact destinations and all six page URLs are preserved.
+The consolidated browser runner also verifies menu navigation, quote preview,
+multi-select work, encoded contact links, back/edit and Escape without sending.
