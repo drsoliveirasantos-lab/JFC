@@ -115,7 +115,9 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
         assert(response && response.ok(), `${label} ${route.path} HTTP not OK`, failures);
         for (const photo of await page.locator('img[loading="lazy"]').all()) {
           await photo.scrollIntoViewIfNeeded();
-          await photo.evaluate(image => image.decode());
+          // Firefox can reject decode() before a lazy request starts after scrolling.
+          // Wait for actual loaded pixels; broken/missing images still fail this check.
+          await page.waitForFunction(image => image.complete && image.naturalWidth > 0, await photo.elementHandle(), { timeout: 10000 });
         }
         await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
         await page.screenshot({ path: path.join(shotsDir, `${label}-${route.name}.png`), fullPage: true });
