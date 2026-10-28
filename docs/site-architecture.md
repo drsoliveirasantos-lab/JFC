@@ -25,6 +25,7 @@ JFC Renovation is organized around four layers:
 ```txt
 index.html
 services/index.html
+services/{cuisine,plans-de-travail,salle-de-bain,douche,parquet-sols,placo-cloisons,peinture,petits-travaux,finitions}/index.html
 realisations/index.html
 a-propos/index.html
 contact/index.html
@@ -176,3 +177,31 @@ The mobile header scrolls within the viewport when text is enlarged or the scree
 is short. Consolidated tests exercise Contact/Devis at 844x390 with 200% text,
 empty/invalid quote paths, optional-contact success, floor preselection and
 functional field-border contrast of at least 3:1.
+
+## Dedicated specialties — October 2026
+
+Services remains the index. Nine editable static pages correspond to the existing
+quote categories. Desktop uses wrapping page links; mobile enhances them to a
+native selector plus explicit Voir button (no change-triggered navigation). Without
+JavaScript the links remain available. Existing six URLs and anchors are retained.
+All nine pages are in the consolidated static/browser route list. Deep links,
+back/forward, keyboard access, every quote category, no-JS links and enlarged
+mobile layouts are covered by the same test runner.
+
+Portfolio attribution: cuisine and plans use named kitchen/worktop photographs;
+salle-de-bain and douche use the named bathroom/shower photographs. No verified
+category-specific photos exist for parquet, placo, peinture, petits travaux or
+finitions. These pages use a project-preparation panel instead of relabelling an
+unrelated photo. Painting is present in the existing quote choices; no detailed
+painting technique or unverified scope has been added. Photos are unchanged.
+
+Image framing is now `contain` in the hero/carousel, service cards, gallery,
+home photo panels and specialty pages. The full original photo is shown, with
+neutral gutters where ratios differ; hover does not zoom/crop gallery thumbnails.
+The lightbox reserves separate rows for title/close, image and original link,
+keeping controls and the whole photo within short landscape viewports.
+The crop audit compares all 41 image usages (including 5 carousel states and
+10 opened lightbox images) at desktop 1440, mobile 320/390 and landscape 844.
+Original image bytes are preserved. The about SVG remains an illustration,
+not verified photographic evidence; its existing identity wording needs owner
+confirmation separately.

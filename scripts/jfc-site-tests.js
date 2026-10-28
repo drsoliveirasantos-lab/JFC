@@ -12,13 +12,15 @@ const shotsDir = path.join(reportsDir, 'screenshots');
 fs.mkdirSync(reportsDir, { recursive: true });
 fs.mkdirSync(shotsDir, { recursive: true });
 
+const specialties = [{"slug": "cuisine", "label": "Cuisine", "query": "cuisine", "work": "Cuisine"}, {"slug": "plans-de-travail", "label": "Plans de travail", "query": "plan", "work": "Plan de travail"}, {"slug": "salle-de-bain", "label": "Salle de bain", "query": "bain", "work": "Salle de bain"}, {"slug": "douche", "label": "Douche", "query": "douche", "work": "Douche"}, {"slug": "parquet-sols", "label": "Parquet et sols", "query": "sol", "work": "Parquet / sol"}, {"slug": "placo-cloisons", "label": "Placo et cloisons", "query": "cloisons", "work": "Placo / cloison"}, {"slug": "peinture", "label": "Peinture", "query": "peinture", "work": "Peinture"}, {"slug": "petits-travaux", "label": "Petits travaux", "query": "petits-travaux", "work": "Petits travaux"}, {"slug": "finitions", "label": "Finitions", "query": "finitions", "work": "Finitions"}];
 const pages = [
   { name: 'home', path: '/', must: ['JFC Renovation', 'Demander un devis'] },
   { name: 'services', path: '/services/', must: ['Des solutions concrètes', 'Cuisine'] },
   { name: 'realisations', path: '/realisations/', must: ['Réalisations', 'Touchez une photo'] },
   { name: 'a-propos', path: '/a-propos/', must: ['Jonatan Ferreira Coelho', 'Artisan'] },
   { name: 'contact', path: '/contact/', must: ['Contacter JFC', 'WhatsApp'] },
-  { name: 'devis', path: '/devis/', must: ['Demander un devis', 'WhatsApp'] }
+  { name: 'devis', path: '/devis/', must: ['Demander un devis', 'WhatsApp'] },
+  ...specialties.map(item => ({ name: item.slug, path: `/services/${item.slug}/`, must: [item.label, 'Demander un devis'] }))
 ];
 
 function fail(msg, failures) { failures.push(msg); }
@@ -131,6 +133,7 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
             title: document.title,
             brokenImages,
             imageAltMissing,
+            croppedPhotos: [...document.images].filter(img => img.src.includes("/assets/photos/") && getComputedStyle(img).objectFit !== "contain").map(img => img.getAttribute("src")),
             emptyLinks,
             usefulMicrotext: [...document.querySelectorAll('.brand small,.hero .kicker,.hero-frame small')].map(el => parseFloat(getComputedStyle(el).fontSize)),
             overflow,
@@ -152,6 +155,7 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
         assert(metrics.hasPhone, `${label} ${route.path} missing phone`, failures);
         assert(metrics.hasWhatsapp, `${label} ${route.path} missing WhatsApp`, failures);
         assert(consoleErrors.length === 0, `${label} ${route.path} console errors: ${consoleErrors.join(' | ')}`, failures);
+        assert(metrics.croppedPhotos.length === 0, `${label} ${route.path} photos must preserve full framing: ${metrics.croppedPhotos}`, failures);
         for (const text of route.must) assert(metrics.text.includes(text), `${label} ${route.path} missing visible text: ${text}`, failures);
         lines.push(`${label} ${route.path} OK images=${metrics.brokenImages.length === 0 ? 'ok' : 'broken'} overflow=${metrics.overflow}px`);
       } catch (error) {
@@ -160,6 +164,7 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
         await page.close().catch(() => {});
       }
     }
+    await checkSpecialtyRoutes(context, baseUrl, lines, failures);
     const uiPage = await context.newPage();
     try {
       await uiPage.goto(`${baseUrl}/devis/`, { waitUntil: 'networkidle' });
@@ -214,7 +219,8 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
       await uiPage.click('#quickEmail');
       assert(!await uiPage.evaluate(() => window.quoteEmailWasBlocked), 'valid quick email should remain available', failures);
       await uiPage.goto(`${baseUrl}/services/`, { waitUntil: 'networkidle' });
-      await uiPage.getByRole('link', { name: 'Demander un devis sol', exact: true }).click();
+      await uiPage.locator('.service-grid a[href="/services/parquet-sols/"]').click();
+      await uiPage.locator('.specialty-quote').first().click();
       await uiPage.waitForURL('**/devis/?travaux=sol');
       assert(await uiPage.locator('[data-work][value="Parquet / sol"]').isChecked(), 'floor CTA must select Parquet / sol', failures);
       assert(!await uiPage.locator('[data-work][value="Cuisine"]').isChecked(), 'floor CTA must not select Cuisine', failures);
@@ -281,7 +287,18 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
         assert(!!openSrc, 'lightbox opens without image source', failures);
         await page.click('#lightboxClose');
         await page.waitForFunction(() => !document.querySelector('.lightbox')?.classList.contains('open'));
-        lines.push('lightbox OK');
+        for (const [width,height] of [[390,844],[844,390]]) {
+          await page.setViewportSize({width,height});
+          for (let index=0; index<await page.locator('.js-lightbox').count(); index++) {
+            await page.locator('.js-lightbox').nth(index).click();
+            for (const selector of ['#lightboxClose','#lightboxImg','#lightboxOriginal']) {
+              const box=await page.locator(selector).boundingBox();
+              assert(box && box.y>=0 && box.y+box.height<=height && box.x>=0 && box.x+box.width<=width, `lightbox ${index} ${selector} clipped at ${width}x${height}`, failures);
+            }
+            await page.click('#lightboxClose');
+          }
+        }
+        lines.push('lightbox: all ten photos and controls fit portrait/landscape; close works');
       } catch (error) {
         fail(`lightbox threw: ${error?.message || error}`, failures);
       } finally {
@@ -308,6 +325,60 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
     server.close();
   }
   return { lines, failures };
+}
+
+
+async function checkSpecialtyRoutes(context, baseUrl, lines, failures) {
+  const page = await context.newPage();
+  try {
+    for (const item of specialties) {
+      const route = `/services/${item.slug}/`;
+      await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
+      assert(await page.locator('.specialty-links [aria-current="page"]').getAttribute('href') === route, `${route} current specialty incorrect`, failures);
+      await page.locator('.specialty-quote').first().click();
+      await page.waitForURL(`**/devis/?travaux=${item.query}`);
+      const checked = await page.locator('[data-work]:checked').evaluateAll(inputs => inputs.map(input => input.value));
+      assert(checked.length === 1 && checked[0] === item.work, `${route} wrong quote selection ${checked}`, failures);
+      await page.goBack({ waitUntil: 'networkidle' });
+      assert(new URL(page.url()).pathname === route, `${route} back navigation lost`, failures);
+      await page.locator('.specialty-hero a[href="/services/"]').click();
+      await page.waitForURL('**/services/');
+      await page.locator(`.service-grid a[href="${route}"]`).click();
+      await page.waitForURL(`**${route}`);
+      for (const [width,height,scale] of [[320,740,100],[390,844,100],[320,740,200],[844,390,200]]) {
+        await page.setViewportSize({ width,height });
+        await page.evaluate(scale => document.documentElement.style.fontSize = `${scale}%`, scale);
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+        assert(overflow <= 1, `${route} overflow ${overflow}px at ${width}/${scale}%`, failures);
+        assert(await page.locator('.specialty-picker').isVisible(), `${route} mobile specialty picker missing`, failures);
+      }
+      await page.evaluate(() => document.documentElement.style.fontSize = '100%');
+      await page.setViewportSize({width:390,height:844});
+      await page.selectOption('#specialty-choice', '/services/');
+      assert(new URL(page.url()).pathname === route, `${route} selection navigated without confirmation`, failures);
+      await page.locator('#specialty-choice').focus();
+      await page.keyboard.press('Tab');
+      assert(await page.locator('.specialty-picker button').evaluate(button => button === document.activeElement), `${route} picker keyboard order broken`, failures);
+      await page.keyboard.press('Enter');
+      await page.waitForURL('**/services/');
+      await page.setViewportSize({width:1440,height:1000});
+      const tab = page.locator(`.specialty-links a[href="${route}"]`);
+      await tab.focus(); await page.keyboard.press('Enter');
+      await page.waitForURL(`**${route}`);
+      await page.reload({ waitUntil: 'networkidle' });
+      assert(await page.locator('h1').textContent() === `${item.label}.`, `${route} deep link reload incorrect`, failures);
+    }
+    const noJs = await context.browser().newContext({ javaScriptEnabled: false, viewport: { width: 320, height: 740 } });
+    try {
+      const fallback = await noJs.newPage();
+      await fallback.goto(`${baseUrl}/services/`);
+      for (const item of specialties) assert(await fallback.locator(`.specialty-links a[href="/services/${item.slug}/"]`).isVisible(), `no-JS link missing: ${item.slug}`, failures);
+      await fallback.locator('.specialty-links a[href="/services/cuisine/"]').click();
+      await fallback.waitForURL('**/services/cuisine/');
+    } finally { await noJs.close(); }
+    lines.push('specialties: nine direct pages, index/back/reload, keyboard links/picker, nine quote categories, 320/390/landscape 200%, no-JS navigation OK');
+  } catch(error) { fail(`specialty navigation threw: ${error.message}`, failures); }
+  finally { await page.close(); }
 }
 
 async function runStatic() {

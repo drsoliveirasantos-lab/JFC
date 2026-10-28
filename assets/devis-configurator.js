@@ -32,7 +32,7 @@
   const workControl = document.querySelector('.multi-dropdown summary');
   const validationNotice = document.getElementById('quoteValidation');
   let validationAttempted = false;
-  const serviceChoices = { cuisine: 'Cuisine', bain: 'Salle de bain', sol: 'Parquet / sol', cloisons: 'Placo / cloison' };
+  const serviceChoices = { cuisine: 'Cuisine', bain: 'Salle de bain', sol: 'Parquet / sol', cloisons: 'Placo / cloison', plan: 'Plan de travail', douche: 'Douche', peinture: 'Peinture', 'petits-travaux': 'Petits travaux', finitions: 'Finitions' };
   const requestedWork = serviceChoices[new URLSearchParams(window.location.search).get('travaux')];
   if (requestedWork) workInputs.forEach(input => { input.checked = input.value === requestedWork; });
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
