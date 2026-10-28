@@ -156,3 +156,10 @@ reduced-motion support. Without JavaScript, navigation links remain visible.
 Real project photos, contact destinations and all six page URLs are preserved.
 The consolidated browser runner also verifies menu navigation, quote preview,
 multi-select work, encoded contact links, back/edit and Escape without sending.
+
+The portfolio WebP files are retained byte-for-byte. Content images declare
+intrinsic dimensions and asynchronous decoding; images below the first visible
+row use native lazy loading. The initial hero keeps high fetch priority.
+Browser screenshot suites scroll through lazy images and wait for decoding
+before checking all photos. Named contact landmarks and visually hidden section
+headings preserve screen-reader navigation without changing the visual layout.

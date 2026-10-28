@@ -113,6 +113,11 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
       try {
         const response = await page.goto(`${baseUrl}${route.path}?test=${label}`, { waitUntil: 'networkidle', timeout: 30000 });
         assert(response && response.ok(), `${label} ${route.path} HTTP not OK`, failures);
+        for (const photo of await page.locator('img[loading="lazy"]').all()) {
+          await photo.scrollIntoViewIfNeeded();
+          await photo.evaluate(image => image.decode());
+        }
+        await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
         await page.screenshot({ path: path.join(shotsDir, `${label}-${route.name}.png`), fullPage: true });
         const metrics = await page.evaluate(() => {
           const brokenImages = [...document.images].filter(img => !img.complete || img.naturalWidth === 0).map(img => img.getAttribute('src'));
