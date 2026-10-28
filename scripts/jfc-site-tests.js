@@ -101,10 +101,15 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
   const server = await startServer();
   const port = server.address().port;
   const baseUrl = `http://127.0.0.1:${port}`;
+  console.log(`[${label}] launching browser`);
   const browser = await browserType.launch({ headless: true });
+  const watchdog = setTimeout(() => { console.error(`[${label}] browser suite exceeded 4 minutes; last progress line identifies the pending operation`); process.exit(1); }, 240000);
   try {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, isMobile: !!viewport.isMobile, deviceScaleFactor: viewport.isMobile ? 2 : 1, userAgent: viewport.userAgent });
+    context.setDefaultTimeout(10000);
+    context.setDefaultNavigationTimeout(15000);
     for (const route of pages) {
+      console.log(`[${label}] page ${route.path}`);
       const page = await context.newPage();
       const consoleErrors = [];
       page.on('console', msg => {
@@ -276,7 +281,9 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
       lines.push('320px text 200%: gallery and quote headings wrap without overflow');
     } catch (error) { fail(`landscape enlarged menu: ${error.message}`, failures); }
     finally { await zoomMenu.close(); }
+    console.log(`[${label}] closing context`);
     await context.close();
+    console.log(`[${label}] context closed`);
     if (checks.lightbox) {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
       try {
@@ -321,8 +328,11 @@ async function browserVisit(browserType, viewport, label, checks = {}) {
       }
     }
   } finally {
+    console.log(`[${label}] closing browser`);
     await browser.close();
+    clearTimeout(watchdog);
     server.close();
+    console.log(`[${label}] browser closed`);
   }
   return { lines, failures };
 }
@@ -333,6 +343,7 @@ async function checkSpecialtyRoutes(context, baseUrl, lines, failures) {
   try {
     for (const item of specialties) {
       const route = `/services/${item.slug}/`;
+      console.log(`[specialty] ${route}: quote and return`);
       await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
       assert(await page.locator('.specialty-links [aria-current="page"]').getAttribute('href') === route, `${route} current specialty incorrect`, failures);
       await page.locator('.specialty-quote').first().click();
@@ -354,6 +365,7 @@ async function checkSpecialtyRoutes(context, baseUrl, lines, failures) {
       }
       await page.evaluate(() => document.documentElement.style.fontSize = '100%');
       await page.setViewportSize({width:390,height:844});
+      console.log(`[specialty] ${route}: mobile keyboard picker`);
       await page.selectOption('#specialty-choice', '/services/');
       assert(new URL(page.url()).pathname === route, `${route} selection navigated without confirmation`, failures);
       await page.locator('#specialty-choice').focus();
@@ -362,20 +374,23 @@ async function checkSpecialtyRoutes(context, baseUrl, lines, failures) {
       await page.keyboard.press('Enter');
       await page.waitForURL('**/services/');
       await page.setViewportSize({width:1440,height:1000});
+      console.log(`[specialty] ${route}: desktop keyboard link`);
       const tab = page.locator(`.specialty-links a[href="${route}"]`);
       await tab.focus(); await page.keyboard.press('Enter');
       await page.waitForURL(`**${route}`);
       await page.reload({ waitUntil: 'networkidle' });
       assert(await page.locator('h1').textContent() === `${item.label}.`, `${route} deep link reload incorrect`, failures);
     }
+    console.log('[specialty] no-JavaScript navigation');
     const noJs = await context.browser().newContext({ javaScriptEnabled: false, viewport: { width: 320, height: 740 } });
     try {
+      noJs.setDefaultTimeout(10000); noJs.setDefaultNavigationTimeout(15000);
       const fallback = await noJs.newPage();
       await fallback.goto(`${baseUrl}/services/`);
       for (const item of specialties) assert(await fallback.locator(`.specialty-links a[href="/services/${item.slug}/"]`).isVisible(), `no-JS link missing: ${item.slug}`, failures);
       await fallback.locator('.specialty-links a[href="/services/cuisine/"]').click();
       await fallback.waitForURL('**/services/cuisine/');
-    } finally { await noJs.close(); }
+    } finally { console.log('[specialty] closing no-JavaScript context'); await noJs.close(); console.log('[specialty] no-JavaScript context closed'); }
     lines.push('specialties: nine direct pages, index/back/reload, keyboard links/picker, nine quote categories, 320/390/landscape 200%, no-JS navigation OK');
   } catch(error) { fail(`specialty navigation threw: ${error.message}`, failures); }
   finally { await page.close(); }
