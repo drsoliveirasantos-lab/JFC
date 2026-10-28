@@ -80,6 +80,11 @@ try {
       page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
       const response = await page.goto(`${baseUrl}${route.path}?visual-test=1`, { waitUntil: 'networkidle', timeout: 30000 });
       assert(response && response.ok(), `${vp.name} ${route.path} did not return HTTP 200`, failures);
+      for (const photo of await page.locator('img[loading="lazy"]').all()) {
+        await photo.scrollIntoViewIfNeeded();
+        await photo.evaluate(image => image.decode());
+      }
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
       await page.screenshot({ path: path.join(shotsDir, `${vp.name}-${route.name}.png`), fullPage: true });
 
       const metrics = await page.evaluate(() => {

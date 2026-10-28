@@ -25,6 +25,7 @@ JFC Renovation is organized around four layers:
 ```txt
 index.html
 services/index.html
+services/{cuisine,plans-de-travail,salle-de-bain,douche,parquet-sols,placo-cloisons,peinture,petits-travaux,finitions}/index.html
 realisations/index.html
 a-propos/index.html
 contact/index.html
@@ -142,3 +143,73 @@ hierarchy for page, section, category, item, description/price and metadata role
 AGENTS and Copilot require it before UI work and require its inclusion in future
 site repositories. Compact interface text and long-form learning text have
 different readability needs; both keep details subordinate to their own heading.
+
+## Visual refresh — October 2026
+
+The six existing page URLs share `style.css` (design tokens and layout) and
+`assets/mobile-fixes.css` (responsive rules, lightbox and quote refinements).
+The quote page also loads `assets/devis-configurator.css` before the refinements.
+Earlier decorative stylesheets remain in the repository for traceability but
+are no longer linked by the pages; do not reintroduce their overlapping rules.
+`assets/site-ui.js` provides the progressive-enhancement mobile menu, and
+`assets/home-carousel.js` controls the existing project slideshow with pause and
+reduced-motion support. Without JavaScript, navigation links remain visible.
+Real project photos, contact destinations and all six page URLs are preserved.
+The consolidated browser runner also verifies menu navigation, quote preview,
+multi-select work, encoded contact links, back/edit and Escape without sending.
+
+The portfolio WebP files are retained byte-for-byte. Content images declare
+intrinsic dimensions and asynchronous decoding; images below the first visible
+row use native lazy loading. The initial hero keeps high fetch priority.
+Browser screenshot suites scroll through lazy images and wait for decoding
+before checking all photos. Named contact landmarks and visually hidden section
+headings preserve screen-reader navigation without changing the visual layout.
+
+## Quote and enlarged-menu safeguards
+
+The generic quote starts without an imposed work type. Service links can select
+`cuisine`, `bain`, `sol` or `cloisons` through the allowlisted `travaux` query.
+The selection stays editable. A work choice or project description is sufficient;
+name, phone, email and city remain optional. Provided phone/email values are
+validated before preview and before the direct email link. Associated inline
+errors preserve input and focus the first correction.
+The mobile header scrolls within the viewport when text is enlarged or the screen
+is short. Consolidated tests exercise Contact/Devis at 844x390 with 200% text,
+empty/invalid quote paths, optional-contact success, floor preselection and
+functional field-border contrast of at least 3:1.
+
+## Dedicated specialties — October 2026
+
+Services remains the index. Nine editable static pages correspond to the existing
+quote categories. Desktop uses wrapping page links; mobile enhances them to a
+native selector plus explicit Voir button (no change-triggered navigation). Without
+JavaScript the links remain available. Existing six URLs and anchors are retained.
+All nine pages are in the consolidated static/browser route list. Deep links,
+back/forward, keyboard access, every quote category, no-JS links and enlarged
+mobile layouts are covered by the same test runner.
+
+Portfolio attribution: cuisine and plans use named kitchen/worktop photographs;
+salle-de-bain and douche use the named bathroom/shower photographs. No verified
+category-specific photos exist for parquet, placo, peinture, petits travaux or
+finitions. These pages use a project-preparation panel instead of relabelling an
+unrelated photo. Painting is present in the existing quote choices; no detailed
+painting technique or unverified scope has been added. Photos are unchanged.
+
+Image framing is now `contain` in the hero/carousel, service cards, gallery,
+home photo panels and specialty pages. The full original photo is shown, with
+neutral gutters where ratios differ; hover does not zoom/crop gallery thumbnails.
+The lightbox reserves separate rows for title/close, image and original link,
+keeping controls and the whole photo within short landscape viewports.
+The crop audit compares all 41 image usages (including 5 carousel states and
+10 opened lightbox images) at desktop 1440, mobile 320/390 and landscape 844.
+Original image bytes are preserved. The about SVG remains an illustration,
+not verified photographic evidence; its existing identity wording needs owner
+confirmation separately.
+
+## Project descriptions and gallery filters
+
+`assets/project-gallery.js` owns shared per-photo descriptions, filtering and the
+progressively enhanced viewer. See `docs/project-photo-descriptions.md` for the
+source-by-source evidence and the one bathroom with user-confirmed work.
+Gallery and specialty photo links share the same viewer and metadata. No-JS
+links still open the original image; gallery cards stay complete and visible.

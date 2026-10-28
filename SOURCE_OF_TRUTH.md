@@ -26,6 +26,7 @@ Pages :
 ```txt
 index.html
 services/index.html
+services/{cuisine,plans-de-travail,salle-de-bain,douche,parquet-sols,placo-cloisons,peinture,petits-travaux,finitions}/index.html
 realisations/index.html
 a-propos/index.html
 contact/index.html
